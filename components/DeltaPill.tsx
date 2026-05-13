@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn, formatBudget } from '@/lib/utils'
 
 interface Props {
   delta: number
@@ -17,7 +17,7 @@ export function DeltaPill({ delta }: Props) {
       )}
     >
       {isPos ? '+' : ''}
-      {delta.toFixed(1)}
+      {formatBudget(delta)}
     </span>
   )
 }

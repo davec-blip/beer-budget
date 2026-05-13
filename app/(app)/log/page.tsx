@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { format, parseISO, subDays } from 'date-fns'
 import { PlusCircle, LineChart as LineChartIcon } from 'lucide-react'
-import { cn, budgetColor } from '@/lib/utils'
+import { cn, budgetColor, formatBudget } from '@/lib/utils'
 import { currentLogDate } from '@/lib/date'
 import { DeltaPill } from '@/components/DeltaPill'
 import { ResetMarker } from '@/components/ResetMarker'
@@ -203,7 +203,7 @@ export default function LogPage() {
                       className="text-sm font-medium min-w-[36px] text-right"
                       style={{ color: budgetColor(row.budget) }}
                     >
-                      {row.budget.toFixed(1)}
+                      {formatBudget(row.budget)}
                     </span>
                   </div>
                 </div>

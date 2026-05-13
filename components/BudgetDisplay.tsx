@@ -1,4 +1,4 @@
-import { budgetColor } from '@/lib/utils'
+import { budgetColor, formatBudget } from '@/lib/utils'
 
 interface Props {
   budget: number
@@ -11,7 +11,7 @@ export function BudgetDisplay({ budget }: Props) {
         style={{ color: budgetColor(budget) }}
         className="text-[72px] font-medium leading-none"
       >
-        {budget.toFixed(1)}
+        {formatBudget(budget)}
       </span>
       <p className="text-sm text-gray-500 mt-1">beers in budget</p>
     </div>
