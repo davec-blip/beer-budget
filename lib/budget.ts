@@ -48,15 +48,20 @@ export function buildBudgetLog(
 
   const rows: { date: string; budget: number; delta: number }[] = []
   let runningBudget = 0
-  let cursor = addDays(parseISO(resetLogDate), 1)
+  let cursor = parseISO(resetLogDate)
 
   while (format(cursor, 'yyyy-MM-dd') <= todayLogDate) {
     const dateStr = format(cursor, 'yyyy-MM-dd')
-    const accrual = now >= eightAmUtcForDate(dateStr, timezone) ? accrualRate : 0
+    const isResetDay = dateStr === resetLogDate
+    // No accrual on the reset day — budget restarts at 0, only drinks count against it
+    const accrual = isResetDay ? 0 : now >= eightAmUtcForDate(dateStr, timezone) ? accrualRate : 0
     const drinks = drinkMap[dateStr] ?? 0
     const delta = accrual - drinks
     runningBudget += delta
-    rows.push({ date: dateStr, budget: runningBudget, delta })
+    // Only include the reset day in the log if drinks were actually logged on it
+    if (!isResetDay || drinks > 0) {
+      rows.push({ date: dateStr, budget: runningBudget, delta })
+    }
     cursor = addDays(cursor, 1)
   }
 
