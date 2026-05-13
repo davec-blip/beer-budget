@@ -25,10 +25,15 @@ export async function GET() {
   const now = new Date()
   const logDate = currentLogDate(now, user.timezone)
 
-  const logs = await db
+  const rawLogs = await db
     .select({ log_date: drink_logs.log_date, drink_count: drink_logs.drink_count })
     .from(drink_logs)
     .where(eq(drink_logs.user_id, user.id))
+
+  const logs = rawLogs.map((l) => ({
+    log_date: String(l.log_date).slice(0, 10),
+    drink_count: l.drink_count,
+  }))
 
   const accrualRate = parseFloat(user.accrual_rate)
   const budget = calculateBudget(resetAt, accrualRate, logs, user.timezone, now)
