@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:push": "drizzle-kit push",
+    "db:push": "node --env-file=.env.local ./node_modules/.bin/drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "seed": "tsx scripts/seed-users.ts"
+    "seed": "node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-users.ts"
   },
   "dependencies": {
     "next": "^14.2.30",

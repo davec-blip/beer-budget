@@ -1,12 +1,11 @@
-import 'dotenv/config'
 import { db } from '../lib/db'
 import { users } from '../lib/schema'
 import bcrypt from 'bcryptjs'
 
 const seedUsers = [
   {
-    username: 'alex',
-    password: 'yourpassword',
+    username: 'Dave',
+    password: 'test123',
     timezone: 'America/New_York',
     accrual_rate: '1.00',
   },
