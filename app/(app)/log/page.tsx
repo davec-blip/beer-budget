@@ -104,9 +104,6 @@ export default function LogPage() {
     })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1))
 
-  const cutoff = logDate ? format(subDays(parseISO(logDate), 6), 'yyyy-MM-dd') : ''
-  const recent = mergedItems.filter((i) => i.date >= cutoff)
-  const older = mergedItems.filter((i) => i.date < cutoff)
 
   // budget log list is descending
   const listRows = [...budgetLog].reverse()
@@ -144,15 +141,13 @@ export default function LogPage() {
           </Link>
 
           {/* Chart toggle */}
-          {logs.length > 0 && (
-            <button
-              onClick={() => setShowDrinksChart((s) => !s)}
-              className="flex items-center gap-1.5 text-xs text-gray-500 mb-3"
-            >
-              <BarChart2 className="w-3.5 h-3.5" />
-              {showDrinksChart ? 'Hide chart' : 'Show chart'}
-            </button>
-          )}
+          <button
+            onClick={() => setShowDrinksChart((s) => !s)}
+            className="flex items-center gap-1.5 text-xs text-gray-500 mb-3"
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            {showDrinksChart ? 'Hide chart' : 'Show chart'}
+          </button>
 
           {/* Chart + window toggle */}
           {showDrinksChart && (
@@ -167,56 +162,23 @@ export default function LogPage() {
             <p className="text-sm text-gray-400 text-center py-8">No entries yet</p>
           )}
 
-          {recent.length > 0 && (
-            <>
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
-                Past 7 days
-              </p>
-              {recent.map((item, i) =>
-                item.kind === 'drink' ? (
-                  <Link
-                    key={`d-${item.date}-${i}`}
-                    href={`/log/${item.date}`}
-                    className="flex justify-between items-center py-2.5 border-b border-gray-100"
-                  >
-                    <span className="text-sm text-gray-900">
-                      {format(parseISO(item.date), 'EEE, MMM d')}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {item.count} {item.count === 1 ? 'drink' : 'drinks'}
-                    </span>
-                  </Link>
-                ) : (
-                  <ResetMarker key={`r-${item.resetAt}`} date={item.date} />
-                )
-              )}
-            </>
-          )}
-
-          {older.length > 0 && (
-            <>
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2 mt-5">
-                Older
-              </p>
-              {older.map((item, i) =>
-                item.kind === 'drink' ? (
-                  <Link
-                    key={`d-${item.date}-${i}`}
-                    href={`/log/${item.date}`}
-                    className="flex justify-between items-center py-2.5 border-b border-gray-100"
-                  >
-                    <span className="text-sm text-gray-900">
-                      {format(parseISO(item.date), 'EEE, MMM d')}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {item.count} {item.count === 1 ? 'drink' : 'drinks'}
-                    </span>
-                  </Link>
-                ) : (
-                  <ResetMarker key={`r-${item.resetAt}`} date={item.date} />
-                )
-              )}
-            </>
+          {mergedItems.map((item, i) =>
+            item.kind === 'drink' ? (
+              <Link
+                key={`d-${item.date}-${i}`}
+                href={`/log/${item.date}`}
+                className="flex justify-between items-center py-2.5 border-b border-gray-100"
+              >
+                <span className="text-sm text-gray-900">
+                  {format(parseISO(item.date), 'EEE, MMM d')}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {item.count} {item.count === 1 ? 'drink' : 'drinks'}
+                </span>
+              </Link>
+            ) : (
+              <ResetMarker key={`r-${item.resetAt}`} date={item.date} />
+            )
           )}
         </div>
       )}
@@ -224,17 +186,20 @@ export default function LogPage() {
       {/* budget tab */}
       {tab === 'budget' && (
         <div>
-          <WindowToggle value={window} onChange={setWindow} />
-
           <button
             onClick={() => setShowBudgetChart((s) => !s)}
-            className="flex items-center gap-1.5 text-xs text-gray-500 mb-3"
+            className="flex items-center gap-1.5 text-xs text-gray-500 mt-4 mb-3"
           >
             <LineChartIcon className="w-3.5 h-3.5" />
             {showBudgetChart ? 'Hide chart' : 'Show chart'}
           </button>
 
-          {showBudgetChart && <BudgetLogChart data={budgetLog} />}
+          {showBudgetChart && (
+            <>
+              <WindowToggle value={window} onChange={setWindow} />
+              <BudgetLogChart data={budgetLog} />
+            </>
+          )}
 
           {budgetLoading ? (
             <p className="text-sm text-gray-400 text-center py-8">Loading…</p>

@@ -20,6 +20,14 @@ interface Props {
 }
 
 export function DrinksChart({ data }: Props) {
+  if (data.length === 0) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-3 mb-4 h-[120px] flex items-center justify-center">
+        <p className="text-xs text-gray-400">No data yet</p>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-gray-50 rounded-lg p-3 mb-4">
       <ResponsiveContainer width="100%" height={120}>
