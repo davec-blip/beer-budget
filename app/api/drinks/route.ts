@@ -5,7 +5,6 @@ import { db } from '@/lib/db'
 import { users, drink_logs, budget_resets } from '@/lib/schema'
 import { eq, desc } from 'drizzle-orm'
 import { calculateBudget } from '@/lib/budget'
-import { currentLogDate } from '@/lib/date'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -35,13 +34,13 @@ export async function GET() {
     .where(eq(budget_resets.user_id, user.id))
     .orderBy(desc(budget_resets.reset_at))
 
-  const resetLogDate = currentLogDate(resetAt, user.timezone)
-  const filteredLogs = logs
-    .filter((l) => String(l.log_date).slice(0, 10) >= resetLogDate)
-    .map((l) => ({ date: String(l.log_date).slice(0, 10), count: l.drink_count }))
+  const allLogs = logs.map((l) => ({
+    date: String(l.log_date).slice(0, 10),
+    count: l.drink_count,
+  }))
 
   return NextResponse.json({
-    logs: filteredLogs,
+    logs: allLogs,
     resets: resets.map((r) => ({ resetAt: r.resetAt.toISOString() })),
   })
 }

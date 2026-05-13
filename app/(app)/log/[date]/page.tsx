@@ -34,7 +34,7 @@ export default function EditEntryPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ count }),
     })
-    router.push('/log')
+    window.location.href = '/log'
   }
 
   if (!loaded) {

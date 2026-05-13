@@ -34,7 +34,7 @@ export default function NewEntryPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ date, count }),
     })
-    router.push('/log')
+    window.location.href = '/log'
   }
 
   return (
