@@ -33,7 +33,7 @@ export default function SettingsPage() {
   }, [])
 
   function changeRate(delta: number) {
-    const next = Math.max(0.25, parseFloat((rate + delta).toFixed(2)))
+    const next = Math.max(0, parseFloat((rate + delta).toFixed(2)))
     setRate(next)
     if (saveRateTimer.current) clearTimeout(saveRateTimer.current)
     saveRateTimer.current = setTimeout(() => {

@@ -13,7 +13,7 @@ export async function PATCH(request: NextRequest) {
   const updates: Partial<{ accrual_rate: string; timezone: string }> = {}
 
   if (body.accrualRate !== undefined) {
-    if (body.accrualRate < 0.25) return NextResponse.json({ error: 'Invalid rate' }, { status: 400 })
+    if (body.accrualRate < 0) return NextResponse.json({ error: 'Invalid rate' }, { status: 400 })
     updates.accrual_rate = body.accrualRate.toFixed(2)
   }
 

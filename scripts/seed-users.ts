@@ -1,6 +1,8 @@
 import { db } from '../lib/db'
-import { users } from '../lib/schema'
+import { users, budget_resets } from '../lib/schema'
 import bcrypt from 'bcryptjs'
+import { eq } from 'drizzle-orm'
+import { subDays } from 'date-fns'
 
 const seedUsers = [
   {
@@ -23,6 +25,25 @@ async function main() {
         accrual_rate: u.accrual_rate,
       })
       .onConflictDoNothing()
+
+    const [user] = await db.select().from(users).where(eq(users.username, u.username)).limit(1)
+
+    const existingResets = await db
+      .select()
+      .from(budget_resets)
+      .where(eq(budget_resets.user_id, user.id))
+      .limit(1)
+
+    if (existingResets.length === 0) {
+      await db.insert(budget_resets).values({
+        user_id: user.id,
+        reset_at: subDays(new Date(), 7),
+      })
+      console.log(`Set budget start to 7 days ago for: ${u.username}`)
+    } else {
+      console.log(`Budget reset already exists for: ${u.username}, skipping`)
+    }
+
     console.log(`Seeded user: ${u.username}`)
   }
   process.exit(0)

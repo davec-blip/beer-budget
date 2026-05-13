@@ -12,9 +12,10 @@ interface Props {
 
 export function DrinkCounter({ initialCount, logDate, onBudgetUpdate }: Props) {
   const [count, setCount] = useState(initialCount)
+  const [submittedCount, setSubmittedCount] = useState(initialCount)
   const [submitting, setSubmitting] = useState(false)
 
-  const hasChanged = count !== initialCount
+  const hasChanged = count !== submittedCount
 
   async function handleSubmit() {
     if (!hasChanged || submitting) return
@@ -27,6 +28,7 @@ export function DrinkCounter({ initialCount, logDate, onBudgetUpdate }: Props) {
       })
       const data = await res.json()
       if (data.newBudget !== undefined) onBudgetUpdate(data.newBudget)
+      setSubmittedCount(count)
     } finally {
       setSubmitting(false)
     }
