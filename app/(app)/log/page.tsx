@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { format, parseISO, subDays } from 'date-fns'
-import { PlusCircle, LineChart as LineChartIcon } from 'lucide-react'
+import { format, parseISO, subDays, addDays } from 'date-fns'
+import { PlusCircle, BarChart2, LineChart as LineChartIcon } from 'lucide-react'
 import { cn, budgetColor, formatBudget } from '@/lib/utils'
 import { currentLogDate } from '@/lib/date'
 import { DeltaPill } from '@/components/DeltaPill'
 import { ResetMarker } from '@/components/ResetMarker'
 import { BudgetLogChart } from '@/components/BudgetLogChart'
+import { DrinksChart } from '@/components/DrinksChart'
 import { WindowToggle, type Window } from '@/components/WindowToggle'
 
 type Tab = 'drinks' | 'budget'
@@ -30,17 +31,18 @@ const WINDOW_MAP: Record<Window, string> = {
 
 export default function LogPage() {
   const [tab, setTab] = useState<Tab>('drinks')
+  const [window, setWindow] = useState<Window>('30d')
 
   // drinks tab state
   const [logs, setLogs] = useState<DrinkEntry[]>([])
   const [resets, setResets] = useState<ResetEntry[]>([])
   const [timezone, setTimezone] = useState('UTC')
   const [logDate, setLogDate] = useState('')
+  const [showDrinksChart, setShowDrinksChart] = useState(false)
 
   // budget tab state
   const [budgetLog, setBudgetLog] = useState<BudgetRow[]>([])
-  const [window, setWindow] = useState<Window>('30d')
-  const [showChart, setShowChart] = useState(false)
+  const [showBudgetChart, setShowBudgetChart] = useState(false)
   const [budgetLoading, setBudgetLoading] = useState(false)
 
   useEffect(() => {
@@ -66,6 +68,31 @@ export default function LogPage() {
       .then((d) => setBudgetLog(d))
       .finally(() => setBudgetLoading(false))
   }, [tab, window])
+
+  // Build drinks chart data client-side
+  const drinksChartData = useMemo(() => {
+    if (!logDate || logs.length === 0) return []
+    const today = parseISO(logDate)
+    const drinkMap = Object.fromEntries(logs.map((l) => [l.date, l.count]))
+
+    let startDate: Date
+    if (window === 'All') {
+      const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date))
+      startDate = parseISO(sorted[0].date)
+    } else {
+      const days = window === '7d' ? 7 : window === '30d' ? 30 : 90
+      startDate = subDays(today, days - 1)
+    }
+
+    const rows: { date: string; count: number }[] = []
+    let cursor = startDate
+    while (format(cursor, 'yyyy-MM-dd') <= logDate) {
+      const dateStr = format(cursor, 'yyyy-MM-dd')
+      rows.push({ date: dateStr, count: drinkMap[dateStr] ?? 0 })
+      cursor = addDays(cursor, 1)
+    }
+    return rows
+  }, [logs, window, logDate])
 
   // Build merged + sorted list for drinks tab
   const mergedItems: ListItem[] = [
@@ -107,11 +134,35 @@ export default function LogPage() {
       {/* drinks tab */}
       {tab === 'drinks' && (
         <div>
-          <Link href="/log/new" className="flex items-center gap-1.5 text-sm text-blue-600 mt-4 mb-4">
+          {/* Add entry — full-width outlined button */}
+          <Link
+            href="/log/new"
+            className="flex items-center justify-center gap-2 w-full mt-4 mb-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-900"
+          >
             <PlusCircle className="w-4 h-4" />
             Add entry
           </Link>
 
+          {/* Chart toggle */}
+          {logs.length > 0 && (
+            <button
+              onClick={() => setShowDrinksChart((s) => !s)}
+              className="flex items-center gap-1.5 text-xs text-gray-500 mb-3"
+            >
+              <BarChart2 className="w-3.5 h-3.5" />
+              {showDrinksChart ? 'Hide chart' : 'Show chart'}
+            </button>
+          )}
+
+          {/* Chart + window toggle */}
+          {showDrinksChart && (
+            <>
+              <WindowToggle value={window} onChange={setWindow} />
+              <DrinksChart data={drinksChartData} />
+            </>
+          )}
+
+          {/* Log list */}
           {mergedItems.length === 0 && (
             <p className="text-sm text-gray-400 text-center py-8">No entries yet</p>
           )}
@@ -176,14 +227,14 @@ export default function LogPage() {
           <WindowToggle value={window} onChange={setWindow} />
 
           <button
-            onClick={() => setShowChart((s) => !s)}
+            onClick={() => setShowBudgetChart((s) => !s)}
             className="flex items-center gap-1.5 text-xs text-gray-500 mb-3"
           >
             <LineChartIcon className="w-3.5 h-3.5" />
-            {showChart ? 'Hide chart' : 'Show chart'}
+            {showBudgetChart ? 'Hide chart' : 'Show chart'}
           </button>
 
-          {showChart && <BudgetLogChart data={budgetLog} />}
+          {showBudgetChart && <BudgetLogChart data={budgetLog} />}
 
           {budgetLoading ? (
             <p className="text-sm text-gray-400 text-center py-8">Loading…</p>
