@@ -1,5 +1,5 @@
 import { db } from '../lib/db'
-import { users, budget_resets } from '../lib/schema'
+import { users, budget_resets, rate_changes } from '../lib/schema'
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { subDays } from 'date-fns'
@@ -54,6 +54,24 @@ async function main() {
       console.log(`Set budget start to 7 days ago for: ${u.username}`)
     } else {
       console.log(`Budget reset already exists for: ${u.username}, skipping`)
+    }
+
+    // Ensure each user has at least one rate_changes row (epoch = "since the beginning")
+    const existingRates = await db
+      .select()
+      .from(rate_changes)
+      .where(eq(rate_changes.user_id, user.id))
+      .limit(1)
+
+    if (existingRates.length === 0) {
+      await db.insert(rate_changes).values({
+        user_id: user.id,
+        rate: u.accrual_rate,
+        effective_from: new Date(0),
+      })
+      console.log(`Inserted initial rate_changes row for: ${u.username}`)
+    } else {
+      console.log(`Rate changes already exist for: ${u.username}, skipping`)
     }
 
     console.log(`Seeded user: ${u.username}`)

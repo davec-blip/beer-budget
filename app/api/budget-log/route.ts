@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { users, drink_logs, budget_resets } from '@/lib/schema'
 import { eq, desc } from 'drizzle-orm'
 import { buildBudgetLog } from '@/lib/budget'
+import { getRateSchedule } from '@/lib/rates'
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -43,14 +44,9 @@ export async function GET(request: NextRequest) {
     drink_count: l.drink_count,
   }))
 
-  const result = buildBudgetLog(
-    resetAt,
-    parseFloat(user.accrual_rate),
-    logs,
-    user.timezone,
-    new Date(),
-    windowDays
-  )
+  const rateSchedule = await getRateSchedule(user.id, user.accrual_rate)
+
+  const result = buildBudgetLog(resetAt, rateSchedule, logs, user.timezone, new Date(), windowDays)
 
   return NextResponse.json(result)
 }

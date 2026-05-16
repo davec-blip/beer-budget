@@ -6,6 +6,7 @@ import { users, drink_logs, budget_resets } from '@/lib/schema'
 import { eq, desc } from 'drizzle-orm'
 import { calculateBudget } from '@/lib/budget'
 import { currentLogDate } from '@/lib/date'
+import { getRateSchedule } from '@/lib/rates'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -35,16 +36,15 @@ export async function GET() {
     drink_count: l.drink_count,
   }))
 
-  const accrualRate = parseFloat(user.accrual_rate)
-  const budget = calculateBudget(resetAt, accrualRate, logs, user.timezone, now)
-
+  const rateSchedule = await getRateSchedule(user.id, user.accrual_rate)
+  const budget = calculateBudget(resetAt, rateSchedule, logs, user.timezone, now)
   const todayLog = logs.find((l) => l.log_date === logDate)
 
   return NextResponse.json({
     budget,
     logDate,
     todayCount: todayLog?.drink_count ?? 0,
-    accrualRate,
+    accrualRate: parseFloat(user.accrual_rate),
     timezone: user.timezone,
     resetAt: resetAt.toISOString(),
   })

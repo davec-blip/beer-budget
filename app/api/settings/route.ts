@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { users } from '@/lib/schema'
+import { users, rate_changes } from '@/lib/schema'
 import { eq } from 'drizzle-orm'
 
 export async function PATCH(request: NextRequest) {
@@ -26,6 +26,16 @@ export async function PATCH(request: NextRequest) {
   }
 
   await db.update(users).set(updates).where(eq(users.id, session.user.id))
+
+  // When the accrual rate changes, insert a rate_changes row so future budget
+  // calculations use the new rate without retroactively affecting history.
+  if (body.accrualRate !== undefined) {
+    await db.insert(rate_changes).values({
+      user_id: session.user.id,
+      rate: body.accrualRate.toFixed(2),
+      effective_from: new Date(),
+    })
+  }
 
   return NextResponse.json({ ok: true })
 }

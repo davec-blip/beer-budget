@@ -1,9 +1,23 @@
 import { addDays, format, parseISO } from 'date-fns'
 import { currentLogDate, eightAmUtcForDate } from './date'
 
+export type RateSchedule = { rate: number; effective_from: Date }[]
+
+/**
+ * Returns the accrual rate in effect at the 8am start of a given log date.
+ * Falls back to 0 if no rate is found (should not happen if seed is correct).
+ */
+function getRateForDay(dateStr: string, timezone: string, rateChanges: RateSchedule): number {
+  const dayStart = eightAmUtcForDate(dateStr, timezone)
+  const applicable = rateChanges
+    .filter((r) => r.effective_from <= dayStart)
+    .sort((a, b) => b.effective_from.getTime() - a.effective_from.getTime())
+  return applicable.length > 0 ? applicable[0].rate : 0
+}
+
 export function calculateBudget(
   resetAt: Date,
-  accrualRate: number,
+  rateChanges: RateSchedule,
   drinkLogs: { log_date: string; drink_count: number }[],
   timezone: string,
   now: Date = new Date()
@@ -11,13 +25,14 @@ export function calculateBudget(
   const resetLogDate = currentLogDate(resetAt, timezone)
   const todayLogDate = currentLogDate(now, timezone)
 
-  // Count 8am boundaries that have passed since the reset day (exclusive of reset day)
-  let accruedDays = 0
+  let accruedAmount = 0
   let cursor = addDays(parseISO(resetLogDate), 1)
 
   while (format(cursor, 'yyyy-MM-dd') <= todayLogDate) {
     const dateStr = format(cursor, 'yyyy-MM-dd')
-    if (now >= eightAmUtcForDate(dateStr, timezone)) accruedDays++
+    if (now >= eightAmUtcForDate(dateStr, timezone)) {
+      accruedAmount += getRateForDay(dateStr, timezone, rateChanges)
+    }
     cursor = addDays(cursor, 1)
   }
 
@@ -25,8 +40,7 @@ export function calculateBudget(
     .filter((l) => l.log_date >= resetLogDate)
     .reduce((sum, l) => sum + l.drink_count, 0)
 
-  // No clamping — budget can go negative
-  return accruedDays * accrualRate - totalDrinks
+  return accruedAmount - totalDrinks
 }
 
 /**
@@ -35,7 +49,7 @@ export function calculateBudget(
  */
 export function buildBudgetLog(
   resetAt: Date,
-  accrualRate: number,
+  rateChanges: RateSchedule,
   drinkLogs: { log_date: string; drink_count: number }[],
   timezone: string,
   now: Date = new Date(),
@@ -53,12 +67,15 @@ export function buildBudgetLog(
   while (format(cursor, 'yyyy-MM-dd') <= todayLogDate) {
     const dateStr = format(cursor, 'yyyy-MM-dd')
     const isResetDay = dateStr === resetLogDate
-    // No accrual on the reset day — budget restarts at 0, only drinks count against it
-    const accrual = isResetDay ? 0 : now >= eightAmUtcForDate(dateStr, timezone) ? accrualRate : 0
+    const accrual =
+      isResetDay
+        ? 0
+        : now >= eightAmUtcForDate(dateStr, timezone)
+        ? getRateForDay(dateStr, timezone, rateChanges)
+        : 0
     const drinks = drinkMap[dateStr] ?? 0
     const delta = accrual - drinks
     runningBudget += delta
-    // Only include the reset day in the log if drinks were actually logged on it
     if (!isResetDay || drinks > 0) {
       rows.push({ date: dateStr, budget: runningBudget, delta })
     }

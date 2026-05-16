@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signOut, useSession } from 'next-auth/react'
-import { Minus, Plus, LogOut, ChevronRight } from 'lucide-react'
+import { Minus, Plus, LogOut } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { SectionHeader } from '@/components/SectionHeader'
 import { TimezoneSelect } from '@/components/TimezoneSelect'
@@ -17,10 +17,11 @@ export default function SettingsPage() {
   const { data: session } = useSession()
   const [settings, setSettings] = useState<Settings | null>(null)
   const [rate, setRate] = useState(1.0)
+  const [savedRate, setSavedRate] = useState(1.0)
+  const [savingRate, setSavingRate] = useState(false)
   const [timezone, setTimezone] = useState('America/New_York')
   const [showResetModal, setShowResetModal] = useState(false)
   const [resetting, setResetting] = useState(false)
-  const saveRateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetch('/api/budget')
@@ -28,6 +29,7 @@ export default function SettingsPage() {
       .then((d) => {
         setSettings(d)
         setRate(d.accrualRate)
+        setSavedRate(d.accrualRate)
         setTimezone(d.timezone)
       })
   }, [])
@@ -35,14 +37,17 @@ export default function SettingsPage() {
   function changeRate(delta: number) {
     const next = Math.max(0, parseFloat((rate + delta).toFixed(2)))
     setRate(next)
-    if (saveRateTimer.current) clearTimeout(saveRateTimer.current)
-    saveRateTimer.current = setTimeout(() => {
-      fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accrualRate: next }),
-      })
-    }, 500)
+  }
+
+  async function saveRate() {
+    setSavingRate(true)
+    await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accrualRate: rate }),
+    })
+    setSavedRate(rate)
+    setSavingRate(false)
   }
 
   function saveTimezone(tz: string) {
@@ -65,6 +70,8 @@ export default function SettingsPage() {
       .then((d) => setSettings(d))
   }
 
+  const rateChanged = rate !== savedRate
+
   return (
     <div className="px-5 pt-6 relative">
       <h1 className="text-xl font-medium text-gray-900 mb-6">Settings</h1>
@@ -74,20 +81,31 @@ export default function SettingsPage() {
       {/* Daily accrual rate */}
       <div className="flex justify-between items-center py-3 border-b border-gray-100">
         <span className="text-sm text-gray-900">Daily accrual rate</span>
-        <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1">
-          <button
-            onClick={() => changeRate(-0.25)}
-            className="w-6 h-6 flex items-center justify-center text-gray-500"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
-          <span className="text-sm font-medium min-w-[32px] text-center">{rate.toFixed(2)}</span>
-          <button
-            onClick={() => changeRate(0.25)}
-            className="w-6 h-6 flex items-center justify-center text-gray-500"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1">
+            <button
+              onClick={() => changeRate(-0.25)}
+              className="w-6 h-6 flex items-center justify-center text-gray-500"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-sm font-medium min-w-[32px] text-center">{rate.toFixed(2)}</span>
+            <button
+              onClick={() => changeRate(0.25)}
+              className="w-6 h-6 flex items-center justify-center text-gray-500"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {rateChanged && (
+            <button
+              onClick={saveRate}
+              disabled={savingRate}
+              className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg disabled:opacity-60"
+            >
+              {savingRate ? 'Saving…' : 'Save'}
+            </button>
+          )}
         </div>
       </div>
 

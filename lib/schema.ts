@@ -27,6 +27,15 @@ export const drink_logs = pgTable(
   })
 )
 
+export const rate_changes = pgTable('rate_changes', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  user_id: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  rate: numeric('rate', { precision: 5, scale: 2 }).notNull(),
+  effective_from: timestamp('effective_from', { withTimezone: true }).notNull(),
+})
+
 export const budget_resets = pgTable('budget_resets', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   user_id: uuid('user_id')
@@ -38,3 +47,4 @@ export const budget_resets = pgTable('budget_resets', {
 export type User = typeof users.$inferSelect
 export type DrinkLog = typeof drink_logs.$inferSelect
 export type BudgetReset = typeof budget_resets.$inferSelect
+export type RateChange = typeof rate_changes.$inferSelect
