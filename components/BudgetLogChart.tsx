@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  ReferenceLine,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -38,6 +39,7 @@ export function BudgetLogChart({ data }: Props) {
             labelFormatter={(l) => format(parseISO(l as string), 'MMM d')}
             contentStyle={{ fontSize: 12, border: '1px solid #E5E7EB', borderRadius: 8 }}
           />
+          <ReferenceLine y={0} stroke="#E5E7EB" strokeWidth={1} />
           <Line
             type="monotone"
             dataKey="budget"
