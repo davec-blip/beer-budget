@@ -22,6 +22,12 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('America/New_York')
   const [showResetModal, setShowResetModal] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [savingPassword, setSavingPassword] = useState(false)
 
   useEffect(() => {
     fetch('/api/budget')
@@ -57,6 +63,34 @@ export default function SettingsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ timezone: tz }),
     })
+  }
+
+  async function handlePasswordChange() {
+    setPasswordError('')
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match')
+      return
+    }
+    if (newPassword.length < 4) {
+      setPasswordError('Password must be at least 4 characters')
+      return
+    }
+    setSavingPassword(true)
+    const res = await fetch('/api/settings/password', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    })
+    setSavingPassword(false)
+    if (!res.ok) {
+      const data = await res.json()
+      setPasswordError(data.error ?? 'Something went wrong')
+      return
+    }
+    setShowPasswordForm(false)
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
   }
 
   async function handleReset() {
@@ -129,6 +163,55 @@ export default function SettingsPage() {
       <div className="flex justify-between items-center py-3 border-b border-gray-100">
         <span className="text-sm text-gray-900">Signed in as</span>
         <span className="text-sm text-gray-500">{session?.user?.name ?? '—'}</span>
+      </div>
+
+      {/* Change password */}
+      <div className="border-b border-gray-100">
+        <button
+          onClick={() => {
+            setShowPasswordForm((v) => !v)
+            setPasswordError('')
+          }}
+          className="flex justify-between items-center w-full py-3"
+        >
+          <span className="text-sm text-gray-900">Change password</span>
+          <span className="text-xs text-gray-400">{showPasswordForm ? 'Cancel' : 'Edit'}</span>
+        </button>
+        {showPasswordForm && (
+          <div className="pb-4 flex flex-col gap-2">
+            <input
+              type="password"
+              placeholder="Current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400"
+            />
+            <input
+              type="password"
+              placeholder="New password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400"
+            />
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400"
+            />
+            {passwordError && (
+              <p className="text-xs text-red-600">{passwordError}</p>
+            )}
+            <button
+              onClick={handlePasswordChange}
+              disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+              className="w-full py-2 bg-gray-900 text-white text-sm font-medium rounded-lg disabled:opacity-40"
+            >
+              {savingPassword ? 'Saving…' : 'Update password'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sign out */}

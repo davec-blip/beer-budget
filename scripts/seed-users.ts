@@ -23,6 +23,18 @@ const seedUsers = [
     timezone: 'America/New_York',
     accrual_rate: '1.00',
   },
+  {
+    username: 'annika',
+    password: 'beers',
+    timezone: 'America/New_York',
+    accrual_rate: '1.00',
+  },
+  {
+    username: 'sidney',
+    password: 'beers2',
+    timezone: 'America/New_York',
+    accrual_rate: '1.00',
+  },
 ]
 
 async function main() {
